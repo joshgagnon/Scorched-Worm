@@ -31,7 +31,6 @@ function Player(ctx){
 			this.guy_left.data[idx_left+3] = guy_array[y][x] * 255;
 		}
 	}	
-
 	this.x = 0;
 	this.y = 0;
 	this.dx = 0;
@@ -116,7 +115,6 @@ function Player(ctx){
 		}
 		
 	};
-
 	this.draw = function(){
 		if(this.moved){
 			this.ctx.clearRect(this.last_x, this.last_y,  this.width, this.height);
@@ -146,8 +144,9 @@ function Player(ctx){
 		if(!this.up && this.floor){
 			this.up+=10;
 		}
-	}
+	};
 }
+
 
 function setup(){
 	function relMouseCoords(event){
@@ -196,7 +195,19 @@ function init(){
 	var terrain_change = true;
 	var first_draw = true;
 	var update_regions = [];	
-	var player = new Player(player_ctx);
+	
+
+
+	//var player = new Player(player_ctx);
+	/*function update(){
+		if(terrain_change || update_regions.length){
+			collapse();
+			terrain_draw();
+			terrain_change = false;
+		}
+		player.update(terrain);
+		player.draw(player_ctx);
+	}*/
 
 
 	function update(){
@@ -205,8 +216,6 @@ function init(){
 			terrain_draw();
 			terrain_change = false;
 		}
-		player.update(terrain);
-		player.draw(player_ctx);
 	}
 
 
@@ -217,7 +226,7 @@ function init(){
 					var idx = (x + y * width) * 4;
 					var value = 255 - (y/height)*255;
 					var alpha = 255;
-					if(y< height/2.0 + 10*Math.sin(x/30) ){
+					if(y< height/2.0 + 11*Math.sin(x/31) + 51*Math.sin(x/83) ){
 						alpha = 0;
 					}
 					terrain_data[idx] = value;
@@ -287,6 +296,8 @@ function init(){
 		terrain_change = true;
 	};
 
+
+	/*
 	document.onkeydown = function(evt) {
 		evt = evt || window.event;
 		switch (evt.keyCode) {
@@ -317,5 +328,5 @@ function init(){
             break;
 		}
 	
-	};
+	};*/
 }
