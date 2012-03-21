@@ -1,3 +1,49 @@
+	function Particle(x, y, m){
+		this.x = x;
+		this.y = y;
+		this.rgb = [0,0,0];
+		var angle = Math.random()*2*Math.PI;
+	
+		this.dx = m * Math.cos(angle);
+		this.dy = m * Math.sin(angle);
+	
+		this.update = function(){
+			var idx = (Math.floor(this.x) + Math.floor(this.y) * Math.floor(width)) * 4;
+			terrain_data[idx+3] = 0;
+			this.x+=this.dx;
+			this.y+=this.dy;
+		
+		};
+		this.draw = function(){
+			var idx = (Math.floor(this.x) + Math.floor(this.y) * Math.floor(width)) * 4;
+			terrain_data[idx] = this.rgb[0];
+			terrain_data[idx+1] = this.rgb[1];
+			terrain_data[idx+2] = this.rgb[2];
+			terrain_data[idx+3] = 255;
+		};
+		
+	}
+	
+	function Emitter(x, y, size){
+		this.x = x;
+		this.y = y;
+		this.size = size;
+		this.particles = [];
+		for(var i=0;i<100;i++){
+			this.particles.push(new Particle(x,y, size));
+		}
+		this.update = function(){
+			for(var i=0;i<100;i++){
+				this.particles[i].update();
+			}
+		};
+		this.draw = function(){
+			for(var i=0;i<100;i++){
+				this.particles[i].draw();
+			}
+		};
+	}
+
 
 function Player(ctx){
 	this.ctx = ctx;
@@ -184,9 +230,10 @@ function init(){
 		tick++;
 		requestAnimationFrame(step);  
 	}  
+
 	requestAnimationFrame(step);
 	 
-	
+
 	var tick = 0;
 	var terrain = terrain_ctx.createImageData(terrain_canvas.width, terrain_canvas.height);
 	var width = terrain.width, height = terrain.height;
@@ -196,23 +243,16 @@ function init(){
 	var first_draw = true;
 	var update_regions = [];	
 	
-
-
-	//var player = new Player(player_ctx);
-	/*function update(){
-		if(terrain_change || update_regions.length){
-			collapse();
-			terrain_draw();
-			terrain_change = false;
-		}
-		player.update(terrain);
-		player.draw(player_ctx);
-	}*/
-
+	var particles = [];
+	var gravity = [0, 1];
+	var wind = [0, 0];
+	var windavity = [0, 1];
 
 	function update(){
-		if(terrain_change || update_regions.length){
-			collapse();
+		if(terrain_change || update_regions.length || particles.length){	
+			windavity = [gravity[0]+wind[0], gravity[1]+wind[1]];
+			//collapse();
+			update_particles();
 			terrain_draw();
 			terrain_change = false;
 		}
@@ -226,7 +266,7 @@ function init(){
 					var idx = (x + y * width) * 4;
 					var value = 255 - (y/height)*255;
 					var alpha = 255;
-					if(y< height/2.0 + 11*Math.sin(x/31) + 51*Math.sin(x/83) ){
+					if(y< height/2.0 + 11*Math.sin(x/31) + 51*Math.sin(x/83) + Math.sin(x/5) * Math.sin(x/20)){
 						alpha = 0;
 					}
 					terrain_data[idx] = value;
@@ -245,16 +285,102 @@ function init(){
 			for(var x_ = x-r; x_ < x+r; x_++){
 				var idx = (Math.min(Math.max(x_, 0), width-1) +  Math.min(Math.max(y_, 0), height-1) * width) * 4;
 				if(Math.sqrt((x_-x)*(x_-x)+(y_-y)*(y_-y)) < r){
-					terrain_data[idx + 3] = 0;
+					if(terrain_data[idx + 3] && Math.random() < 0.5){
+						particles.push([idx, Math.random()*(x_-x), Math.random()*(y_-y)]);
+					}
+					else{
+						terrain_data[idx + 3] = 0;
+					}
 				}
 			}			
-		}
-		update_regions.push([Math.min(Math.max(x-r, 0), width),
-							 Math.min(Math.max(x+r, 0), width), 
-							 Math.min(Math.max(y+r, 0), height-1)]);
+		}		
 	}
 
 	
+	function update_particles(){
+		for(var i=particles.length-1;i>=0;i--){
+			var idx = particles[i][0];
+			var dx = particles[i][1]+ windavity[0];
+			var dy = particles[i][2]+ windavity[1];
+			var pos = -1;
+		
+			var offset = (Math.round(dx) + Math.round(dy) * width) * 4;
+
+			if(0 > idx + offset + 3 || terrain_data.length < idx + offset + 2){	
+				terrain_data[idx + 3] = 0;
+				particles.splice(i,1);
+				continue;
+			}
+			if(!terrain_data[idx + offset + 3]){
+				pos = idx + offset;
+			}
+			else{
+				/* find any suitable spot */
+				/* get magnitude */
+				var mag = Math.sqrt(dx*dx + dy*dy);
+				var step_x = dx/mag;
+				var step_y = dy/mag;
+				var prev = idx;
+				for(var x = step_x, y = step_y, c=0; c<mag; x+=step_x, y+=step_y, c++){
+					offset = (Math.round(x) + Math.round(y) * width) * 4;					
+					if(terrain_data[idx + offset + 3]){
+						//pos = prev;
+						dx = x;
+						dy = y;
+						break;
+					}
+					else{
+						prev = offset + idx;	
+					}	
+				}
+				if(pos==-1){
+					dx = dy = 0;					
+					offset  = (1 * width) * 4;
+					if(!terrain_data[idx + offset + 3]){
+						pos = idx + offset;
+					}
+					else{
+						offset  = (1 + 1 * width) * 4;
+						if(!terrain_data[idx + offset + 3]){
+							pos = idx + offset;
+						}
+						else{
+							offset  = (-1 + 1 * width) * 4;
+							if(!terrain_data[idx + offset + 3]){
+								pos = idx + offset;
+							}
+						}
+					}				
+				}				
+			}
+			if(pos==-1){
+				//particles.splice(i, 1);
+				/*terrain_data[idx + 3]-=10;
+				if(terrain_data[idx + 3]<0){
+					terrain_data[idx + 3]=0;
+					
+				}
+				if(dx === 0 && dy === 0){
+				
+				}
+				else{
+					//particles[i][1] = 0;
+					//particles[i][2] = 1;
+				}*/
+			}
+			else{
+				terrain_data[pos] = terrain_data[idx];
+				terrain_data[pos + 1] = terrain_data[idx + 1];
+				terrain_data[pos + 2] = terrain_data[idx + 2];
+				terrain_data[pos + 3] = terrain_data[idx + 3];
+				terrain_data[idx + 3] = 0;
+				particles[i][0] = pos;
+				particles[i][1] = dx;
+				particles[i][2] = dy;
+			}
+		}
+	}
+
 
 	function collapse(){
 		var falling = false;
@@ -288,7 +414,7 @@ function init(){
 		blow_hole(Math.floor(Math.random()*width),Math.floor(Math.random()*height),Math.floor(Math.random()*10+10));
 	}
 	setInterval(random_trigger, 1000);
-
+	setTimeout(function(){ location.reload(true);}, 100000);
 	/* events */ 
 	player_canvas.onclick = function(event){
 		var coords = terrain_canvas.relMouseCoords(event);
