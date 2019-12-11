@@ -222,7 +222,7 @@ function init(){
     var terrain_ctx = terrain_canvas.getContext('2d'); 
     var player_canvas = document.getElementById('players');
     var player_ctx = player_canvas.getContext('2d'); 	
-
+    var player = new Player(player_ctx);
     var requestAnimationFrame = window.requestAnimationFrame || 
         window.mozRequestAnimationFrame ||  
         window.webkitRequestAnimationFrame || 
@@ -264,6 +264,8 @@ function init(){
             //collapse();
             update_particles();
             terrain_draw();
+            player.update(terrain);
+            player.draw();
             terrain_change = false;
         }
         var nowTime = new Date();        
@@ -337,7 +339,6 @@ function init(){
             base_ctx.putImageData(img, 0, 0);
         }
         terrain_ctx.putImageData(terrain, 0, 0);
-  
     }
 	
     function blow_hole(x,y,r){
@@ -493,8 +494,8 @@ function init(){
         blow_hole(Math.floor(Math.random()*width),Math.floor(Math.random()*height),
                   Math.floor(Math.random()*10+10));
     }
-    setInterval(random_trigger, 1000);
-    setTimeout(function(){ location.reload(true);}, 100000);
+   // setInterval(random_trigger, 1000);
+   // setTimeout(function(){ location.reload(true);}, 100000);
     /* events */ 
     player_canvas.onclick = function(event){
         var coords = terrain_canvas.relMouseCoords(event);
@@ -503,35 +504,35 @@ function init(){
     };
 
 
-    /*
-      document.onkeydown = function(evt) {
-      evt = evt || window.event;
-      switch (evt.keyCode) {
-      case 37:
-      player.move_left(true);
-      break;
-      case 38:
-      player.move_up(true);
-      break;			
-      case 39:
-      player.move_right(true);
-      break;
-      }
-	
-      };
+    document.onkeydown = function(evt) {
+          evt = evt || window.event;
+          evt.preventDefault();
+          switch (evt.keyCode) {
+              case 37:
+              player.move_left(true);
+              break;
+              case 38:
+              player.move_up(true);
+              break;			
+              case 39:
+              player.move_right(true);
+              break;
+        }
+    };
+      /*
       document.onkeyup = function(evt) {
       evt = evt || window.event;
       switch (evt.keyCode) {
-      case 37:
-      player.move_left(false);
-      break;
-      case 38:
-      player.move_up(false);
-      break;
-			
-      case 39:
-      player.move_right(false);
-      break;
+          case 37:
+          player.move_left(false);
+          break;
+          case 38:
+          player.move_up(false);
+          break;
+    			
+          case 39:
+          player.move_right(false);
+          break;
       }
 	
       };*/
